@@ -3,13 +3,17 @@
 # Date: 2026-04-23
 # Minor improvement after PR review
 # Added after review feedback
+
+#name muhammad abdul rehman khan
+#date april 25, 2026
+#task: adding health check interval and db hostname chnaged.
 import os
 
 class Config:
     """Base configuration class for the Sakila Flask application.
     Handles database connection strings and system timeouts.
     """
-    MYSQL_HOST = os.environ.get('MYSQL_HOST', 'sakila-db-server')
+    MYSQL_HOST = os.environ.get('MYSQL_HOST', 'db-primary')
     MYSQL_USER = os.environ.get('MYSQL_USER', 'root')
     MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', 'admin')
     MYSQL_DB = os.environ.get('MYSQL_DB', 'sakila')
@@ -29,7 +33,7 @@ class Config:
 
 import os
 
-MYSQL_HOST = os.environ.get('MYSQL_HOST', 'sakila-db-server')
+MYSQL_HOST = os.environ.get('MYSQL_HOST', 'db-primary')
 MYSQL_USER = os.environ.get('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '')
 MYSQL_DB = os.environ.get('MYSQL_DB', 'sakila')
