@@ -1,8 +1,6 @@
-# Name: Abdul Raffay Qasim
-# Name: Team Member
-# Date: 2026-04-23
-# Minor improvement after PR review
-# Added after review feedback
+# Name: muhammad abdul rehman khan
+# Date: 2026-04-25
+# Task: Update database configuration
 import os
 
 class Config:
