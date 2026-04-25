@@ -2,9 +2,11 @@ name: Sakila App CI Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - '**'  # This is a wildcard: it tells GitHub to run on EVERY branch
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
