@@ -3,7 +3,7 @@ name: Sakila App CI Pipeline
 on:
   push:
     branches:
-      - '**'  # Runs on every branch
+      - '**'
   pull_request:
     branches:
       - main
@@ -30,7 +30,6 @@ jobs:
       - name: Install Linting Tools
         run: pip install flake8
       - name: Run Lint Check
-        # --exit-zero allows the pipeline to continue even if there are style warnings
         run: flake8 . --max-line-length 120 --ignore E501,W503 --exit-zero
 
   test:
@@ -52,13 +51,13 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install Dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install pytest  # Force install pytest just in case
       - name: Download and Import Sakila Data
         run: |
           curl -L https://downloads.mysql.com/docs/sakila-db.tar.gz | tar -xz
-          # Give MySQL extra time to stabilize
           sleep 15
-          # Use 127.0.0.1 to force a TCP connection (avoids socket errors)
           mysql -h 127.0.0.1 -u root -p${{ env.MYSQL_ROOT_PASSWORD }} < sakila-db/sakila-schema.sql
           mysql -h 127.0.0.1 -u root -p${{ env.MYSQL_ROOT_PASSWORD }} < sakila-db/sakila-data.sql
       - name: Run Pytest
@@ -67,6 +66,7 @@ jobs:
           MYSQL_USER: root
           MYSQL_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
           MYSQL_DB: ${{ env.MYSQL_DATABASE }}
+          PYTHONPATH: ${{ github.workspace }}  # FIX: Tells Python to look in the root folder for your app
         run: pytest -v
 
   build:
@@ -82,11 +82,10 @@ jobs:
         run: docker images
       - name: Smoke Test
         run: |
-          # Start container without needing a real DB for a simple responsiveness check
           docker run -d -p 5000:5000 --name smoke-test \
             -e MYSQL_HOST=nonexistent \
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          sleep 10
+          sleep 15
           curl -f http://localhost:5000 || exit 1
 
   security-scan:
@@ -101,7 +100,7 @@ jobs:
         with:
           image-ref: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
           format: 'table'
-          exit-code: '0' # Don't fail the build on vulnerabilities, just report them
+          exit-code: '0'
           severity: 'CRITICAL,HIGH'
           output: 'trivy-results.txt'
       - name: Upload Scan Result
