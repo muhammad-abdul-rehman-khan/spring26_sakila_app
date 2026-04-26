@@ -1,7 +1,6 @@
 name: Deployment Workflow
 
 on:
-  # Trigger after CI finishes on main OR on direct pushes to main with code changes
   workflow_run:
     workflows: ["Sakila App CI Pipeline"]
     types: [completed]
@@ -19,7 +18,6 @@ on:
 
 jobs:
   deploy-staging:
-    # Only run if it was a push or if the CI workflow succeeded
     if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: staging
@@ -44,21 +42,27 @@ jobs:
   deploy-production:
     needs: deploy-staging
     runs-on: ubuntu-latest
-    environment: production # This triggers the manual approval you set in Step 1
+    environment: production
+    permissions:
+      contents: write # Needed to create the Release
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate Version Tag
+        # This creates the v2026.04.26 format and saves it as an environment variable
+        run: echo "RELEASE_TAG=v$(date +'%Y.%m.%d')" >> $GITHUB_ENV
 
       - name: Simulate Production Deployment
         run: |
           echo "Deploying to Production Environment..."
-          echo "Version: v$(date +'%Y.%m.%d')"
+          echo "Version: ${{ env.RELEASE_TAG }}"
           echo "Slack notification: Deployment to production successful"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.event.repository.updated_at != '' && format('{0:yyyy.MM.dd}', github.event.repository.updated_at) || '2026.04.26' }}
-          name: Release v${{ github.event.repository.updated_at != '' && format('{0:yyyy.MM.dd}', github.event.repository.updated_at) || '2026.04.26' }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Release ${{ env.RELEASE_TAG }}
           body: |
             Automated Release from CI/CD Pipeline.
             Deployment successful to Production.
