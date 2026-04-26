@@ -1,0 +1,68 @@
+name: Deployment Workflow
+
+on:
+  # Trigger after CI finishes on main OR on direct pushes to main with code changes
+  workflow_run:
+    workflows: ["Sakila App CI Pipeline"]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'app.py'
+      - 'config.py'
+      - 'templates/**'
+      - 'static/**'
+      - 'Dockerfile'
+      - 'requirements.txt'
+      - 'docker-compose.yml'
+
+jobs:
+  deploy-staging:
+    # Only run if it was a push or if the CI workflow succeeded
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Simulate Staging Deployment
+        run: |
+          echo "Deploying to Staging Environment..."
+          echo "IMAGE_TAG: staging-${{ github.sha }}"
+          echo "ENVIRONMENT: staging"
+          echo "Slack notification: Deployment to staging successful"
+
+      - name: Generate Deployment Summary
+        run: |
+          echo "### 🚀 Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "* **Status:** Success ✅" >> $GITHUB_STEP_SUMMARY
+          echo "* **Environment:** Staging" >> $GITHUB_STEP_SUMMARY
+          echo "* **Deployment Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "* **Docker Image:** sakila-app:staging-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production # This triggers the manual approval you set in Step 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Simulate Production Deployment
+        run: |
+          echo "Deploying to Production Environment..."
+          echo "Version: v$(date +'%Y.%m.%d')"
+          echo "Slack notification: Deployment to production successful"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.repository.updated_at != '' && format('{0:yyyy.MM.dd}', github.event.repository.updated_at) || '2026.04.26' }}
+          name: Release v${{ github.event.repository.updated_at != '' && format('{0:yyyy.MM.dd}', github.event.repository.updated_at) || '2026.04.26' }}
+          body: |
+            Automated Release from CI/CD Pipeline.
+            Deployment successful to Production.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
